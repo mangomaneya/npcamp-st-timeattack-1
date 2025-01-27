@@ -1,137 +1,177 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 
-import "./App.css";
-
-function App() {
-  // const [count, setCount] = useState(0)
+const App = () => {
   const [medalList, setMedalList] = useState([]);
-  // const [medalData, setMedalData] = useState({
-  //   country: "",
-  //   gold: 0,
-  //   silver: 0,
-  //   bronze: 0,
-  // });
-  const [country, setCountry ] =useState("");
-  const [gold, setGold ] = useState(0);
-  const [silver, setSilver ] = useState(0);
-  const [bronze, setBronze ] = useState(0);
+  const [medalData, setMedalData] = useState({
+    country: "",
+    gold: 0,
+    silver: 0,
+    bronze: 0,
+  });
 
-  // 인풋값 처리
-  const countryInputChangeHandler = (e) => {
-    // const [id, value] = e.target;
-    setCountry(e.target.value);  
-  };
-  const goldInputChangeHandler = (e) => {
-    // const [id, value] = e.target;
-    setGold(e.target.value);
-    
-  };
-  const silverInputChangeHandler = (e) => {
-    // const [id, value] = e.target;
-    setSilver(e.target.value);
-    
-  };
-  const bronzeInputChangeHandler = (e) => {
-    // const [id, value] = e.target;
-    setBronze(e.target.value);
-   
+  //인풋값 적용
+  const medalInputHandler = (e) => {
+    const { name, value } = e.target;
+    setMedalData((prev) => {
+      return { ...prev, [name]: name === "country" ? value : +value };
+    });
   };
 
-  //
-  const medalListSubmitHandler = (e) => {
+  //인풋창 초기화
+  const inputReset = () => {
+    setMedalData({
+      country: "",
+      gold: 0,
+      silver: 0,
+      bronze: 0,
+    });
+  };
+  //서브밋 핸들러
+  const submitHandler = (e) => {
+    //새로고침 막기
     e.preventDefault();
-    // 유효성검사 - 국가명 입력 체크
-    if(!country.trim()){
-      alert("국가명을 공백없이 입력해주세요.");
+    //유효성검사 - 공백
+    if (!medalData.country.trim()) {
+      alert("국가명에는 공백을 입력할 수 없습니다.");
       return;
     }
-    // 유효성 검사 - 국가명 중복 체크
-    // if(medalList.includes(country)){
-    //   alert("이미 존재하는 국가는 업데이트를 눌러주세요.");
-    //   return;
-    // }
 
+    //유효성 검사 - 이미 존재하는 국가명
+    const countryOfMedalList = medalList.map((medal) => {
+      return medal.country;
+    });
+    console.log('countryOfMedalList', countryOfMedalList)
+    if (countryOfMedalList.includes(medalData.country)) {
+      alert("이미 존재하는 국가명입니다. 업데이트를 입력해주세요");
+      return;
+    }
+
+    // 입력된 데이터를 새로운 객체로
     const newMedalList = {
-      country: country,
-      gold: Number(gold),
-      silver: Number(silver),
-      bronze: Number(bronze),
+      country: medalData.country.trim(),
+      gold: medalData.gold,
+      silver: medalData.silver,
+      bronze: medalData.bronze,
     };
-    // console.log(newMedalList);
-    setMedalList([...medalList, newMedalList ])
-    // console.log(medalList)
-    //인풋창 초기화 
-    setCountry("");
-    setGold(0);
-    setSilver(0);
-    setBronze(0);
+    //기존리스트에 새 리슽트 추가
+    setMedalList((prev)=>{
+      const sortedList = [...prev, newMedalList].sort((a,b) =>{
+        return b.gold - a.gold;
+      })
+      return sortedList;
+    });
+    console.log(medalList);
+    //인풋창 초기화
+    inputReset();
   };
 
-  const deleteListHandler = (e)=>{
-    //key와 일치하는 국가명의 나라를 제외하고 medallist를 재배열
-    //filter
-    console.log(e.key);
-    const deletedList = medalList.filter((list)=>{
-      if(!list.country === key){
-        return list;
-      }
-    })
-    return deletedList;
-  }
+  const deleteHandler = (country) => {
+    //medallist에서 country와 일치하는 나라만 제외하고 다시 리스트 만들기...
+    const newMedalList = medalList.filter((medal) => {
+      return medal.country !== country;
+    });
+    setMedalList(newMedalList);
+    // alert(`삭제 완료`);
+  };
+
+  //메달리스트 업데이트
+  const updateHandler = () => {
+    // 메달리스트안에 현재 나라명이 있는지 확인하고,
+    // 메달리스트를 다시 map
+    const countryOfMedalList = medalList.map((medal) => {
+      return medal.country;
+    });
+
+    if (!countryOfMedalList.includes(medalData.country)) {
+      alert(
+        `이미 존재하는 국가만 업데이트 할 수 있습니다. 국가명을 확인해 주세요.`
+      );
+      return;
+    }
+
+    const newMedalList = medalList.map((medal) => {
+      return medal.country === medalData.country ? medalData : medal;
+    });
+    alert(`${medalData.country}의 메달리스트가 업데이트 됩니다.`);
+    setMedalList([...newMedalList].sort((a,b)=>{
+      return b.gold - a.gold
+    }));
+    inputReset();
+  };
+
+
+
+
 
   return (
     <>
-      <form onSubmit={medalListSubmitHandler}>
+      <form onSubmit={submitHandler}>
         <label htmlFor="country">국가명</label>
         <input
           type="text"
+          name="country"
           id="country"
-          value={country}
-          onChange={countryInputChangeHandler}
+          placeholder="국가명을 입력해주세요"
+          value={medalData.country}
+          onChange={medalInputHandler}
         />
         <label htmlFor="gold">금메달</label>
         <input
           type="number"
+          name="gold"
           id="gold"
-          value={gold}
-          onChange={goldInputChangeHandler}
+          placeholder="0"
+          value={medalData.gold}
+          onChange={medalInputHandler}
         />
         <label htmlFor="silver">은메달</label>
         <input
           type="number"
+          name="silver"
           id="silver"
-          value={silver}
-          onChange={silverInputChangeHandler}
+          placeholder="0"
+          value={medalData.silver}
+          onChange={medalInputHandler}
         />
         <label htmlFor="bronze">동메달</label>
         <input
           type="number"
+          name="bronze"
           id="bronze"
-          value={bronze}
-          onChange={bronzeInputChangeHandler}
+          placeholder="0"
+          value={medalData.bronze}
+          onChange={medalInputHandler}
         />
-
-        <div>
-          <button>국가추가</button>
-          <button>업데이트</button>
-        </div>
+        <button type="submit">추가하기</button>
+        <button type="button" onClick={updateHandler}>
+          업데이트
+        </button>
       </form>
       <div>
         <ul>
-          {medalList.map((list)=>{
-            // console.log(list);
-            return <li key={list.country}>
-              <p>{list.country}</p>
-              <p>{list.gold}</p>
-              <p>{list.silver}</p>
-              <p>{list.bronze}</p>
-              <button onClick={deleteListHandler}>삭제</button>
-            </li>
+          
+          {medalList.map((medal) => {
+            return (
+              
+              <li key={medal.country}>
+                <p>{medal.country}</p>
+                <p>{medal.gold}</p>
+                <p>{medal.silver}</p>
+                <p>{medal.bronze}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    deleteHandler(medal.country);
+                  }}
+                >
+                  삭제
+                </button>
+              </li>
+            );
           })}
         </ul>
       </div>
     </>
   );
-}
-
+};
 export default App;
